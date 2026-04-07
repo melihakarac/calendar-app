@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  title     String   @db.VarChar(255)
+  startUtc  DateTime @map("start_utc")
+  endUtc    DateTime @map("end_utc")
+  timezone  String   @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([startUtc, endUtc])
+  @@map("events")
+}
