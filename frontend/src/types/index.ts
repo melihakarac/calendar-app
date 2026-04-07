@@ -6,6 +6,8 @@ export interface CalendarEvent {
   startUtc: string;
   endUtc: string;
   timezone: string;
+  isRecurring: boolean;
+  recurrenceEndUtc: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -15,6 +17,8 @@ export interface CreateEventPayload {
   startUtc: string;
   endUtc: string;
   timezone: string;
+  isRecurring?: boolean;
+  recurrenceEndUtc?: string;
 }
 
 export interface UpdateEventPayload {
@@ -22,6 +26,8 @@ export interface UpdateEventPayload {
   startUtc?: string;
   endUtc?: string;
   timezone?: string;
+  isRecurring?: boolean;
+  recurrenceEndUtc?: string | null;
 }
 
 export interface ApiResponse<T> {

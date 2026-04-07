@@ -31,11 +31,29 @@ export const createEventSchema = z
     startUtc: datetimeSchema,
     endUtc: datetimeSchema,
     timezone: timezoneSchema,
+    isRecurring: z.boolean().optional(),
+    recurrenceEndUtc: datetimeSchema.optional(),
   })
   .refine(endAfterStartRefine, {
     message: 'End time must be after start time',
     path: ['endUtc'],
-  });
+  })
+  .refine(
+    (data) => {
+      if (data.isRecurring && !data.recurrenceEndUtc) return false;
+      return true;
+    },
+    { message: 'Recurrence end date is required for recurring events', path: ['recurrenceEndUtc'] },
+  )
+  .refine(
+    (data) => {
+      if (data.isRecurring && data.recurrenceEndUtc) {
+        return new Date(data.recurrenceEndUtc) > new Date(data.endUtc);
+      }
+      return true;
+    },
+    { message: 'Recurrence end date must be after the event end time', path: ['recurrenceEndUtc'] },
+  );
 
 export const updateEventSchema = z
   .object({
@@ -43,6 +61,8 @@ export const updateEventSchema = z
     startUtc: datetimeSchema.optional(),
     endUtc: datetimeSchema.optional(),
     timezone: timezoneSchema.optional(),
+    isRecurring: z.boolean().optional(),
+    recurrenceEndUtc: datetimeSchema.nullable().optional(),
   })
   .refine(
     (data) => {

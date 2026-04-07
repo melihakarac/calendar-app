@@ -3,6 +3,7 @@ import { Box, Skeleton } from '@mui/material';
 import { startOfDay } from 'date-fns';
 import { TimeGrid } from './TimeGrid';
 import { useCalendarStore } from '../../stores/calendarStore';
+import { useResponsiveCalendarLayout } from '../../hooks/useResponsiveCalendarLayout';
 import { palette } from '../../theme/theme';
 import type { CalendarEvent } from '../../types';
 
@@ -13,28 +14,30 @@ interface DayViewProps {
 
 export function DayView({ events, isLoading }: DayViewProps) {
   const { selectedDate } = useCalendarStore();
+  const { gutterWidth, hourHeight } = useResponsiveCalendarLayout();
   const days = useMemo(() => [startOfDay(selectedDate)], [selectedDate]);
+  const labelGap = Math.max(0, hourHeight - 14);
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', p: 2, gap: 1 }}>
-        <Box sx={{ width: 64, flexShrink: 0, pt: 1 }}>
+      <Box sx={{ display: 'flex', p: { xs: 1, sm: 2 }, gap: 1 }}>
+        <Box sx={{ width: gutterWidth, flexShrink: 0, pt: 1 }}>
           {Array.from({ length: 12 }, (_, i) => (
             <Skeleton
               key={i}
               variant="text"
               width={32}
               height={14}
-              sx={{ mb: '46px', ml: 'auto', borderRadius: 0.5, bgcolor: palette.hoverBg }}
+              sx={{ mb: `${labelGap}px`, ml: 'auto', borderRadius: 0.5, bgcolor: palette.hoverBg }}
             />
           ))}
         </Box>
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           {Array.from({ length: 12 }, (_, i) => (
             <Box
               key={i}
               sx={{
-                height: 60,
+                height: hourHeight,
                 borderBottom: `1px solid ${palette.divider}`,
                 display: 'flex',
                 alignItems: 'center',

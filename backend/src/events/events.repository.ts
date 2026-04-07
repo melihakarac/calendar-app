@@ -9,8 +9,21 @@ export class EventsRepository {
   async findAll(from: Date, to: Date): Promise<Event[]> {
     return this.prisma.event.findMany({
       where: {
-        startUtc: { lt: to },
-        endUtc: { gt: from },
+        OR: [
+          {
+            isRecurring: false,
+            startUtc: { lt: to },
+            endUtc: { gt: from },
+          },
+          {
+            isRecurring: true,
+            startUtc: { lt: to },
+            OR: [
+              { recurrenceEndUtc: { gte: from } },
+              { recurrenceEndUtc: null },
+            ],
+          },
+        ],
       },
       orderBy: { startUtc: 'asc' },
     });
@@ -25,13 +38,22 @@ export class EventsRepository {
     startUtc: Date;
     endUtc: Date;
     timezone: string;
+    isRecurring?: boolean;
+    recurrenceEndUtc?: Date;
   }): Promise<Event> {
     return this.prisma.event.create({ data });
   }
 
   async update(
     id: string,
-    data: Partial<{ title: string; startUtc: Date; endUtc: Date; timezone: string }>,
+    data: Partial<{
+      title: string;
+      startUtc: Date;
+      endUtc: Date;
+      timezone: string;
+      isRecurring: boolean;
+      recurrenceEndUtc: Date | null;
+    }>,
   ): Promise<Event> {
     return this.prisma.event.update({ where: { id }, data });
   }
@@ -51,6 +73,13 @@ export class EventsRepository {
         startUtc: { lt: endUtc },
         endUtc: { gt: startUtc },
       },
+      orderBy: { startUtc: 'asc' },
+    });
+  }
+
+  async findAllEvents(excludeId?: string): Promise<Event[]> {
+    return this.prisma.event.findMany({
+      ...(excludeId && { where: { id: { not: excludeId } } }),
       orderBy: { startUtc: 'asc' },
     });
   }

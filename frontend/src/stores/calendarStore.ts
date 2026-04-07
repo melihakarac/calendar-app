@@ -1,3 +1,4 @@
+import { addDays, addMonths } from 'date-fns';
 import { create } from 'zustand';
 import type { ViewMode } from '../types';
 
@@ -36,19 +37,23 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
 
   navigateForward: () => {
     const { viewMode, selectedDate } = get();
-    const d = new Date(selectedDate);
-    if (viewMode === 'day') d.setDate(d.getDate() + 1);
-    else if (viewMode === 'week') d.setDate(d.getDate() + 7);
-    else d.setMonth(d.getMonth() + 1);
+    const d =
+      viewMode === 'day'
+        ? addDays(selectedDate, 1)
+        : viewMode === 'week'
+          ? addDays(selectedDate, 7)
+          : addMonths(selectedDate, 1);
     set({ selectedDate: d });
   },
 
   navigateBackward: () => {
     const { viewMode, selectedDate } = get();
-    const d = new Date(selectedDate);
-    if (viewMode === 'day') d.setDate(d.getDate() - 1);
-    else if (viewMode === 'week') d.setDate(d.getDate() - 7);
-    else d.setMonth(d.getMonth() - 1);
+    const d =
+      viewMode === 'day'
+        ? addDays(selectedDate, -1)
+        : viewMode === 'week'
+          ? addDays(selectedDate, -7)
+          : addMonths(selectedDate, -1);
     set({ selectedDate: d });
   },
 

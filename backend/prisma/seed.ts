@@ -18,6 +18,29 @@ function day(offset: number, hour: number, min = 0): Date {
 async function main() {
   await prisma.event.deleteMany();
 
+  const recurringEvents = [
+    {
+      title: 'Weekly Team Sync',
+      startUtc: day(0, 8, 0),
+      endUtc: day(0, 8, 30),
+      timezone: 'America/New_York',
+      isRecurring: true,
+      recurrenceEndUtc: day(28, 8, 30),
+    },
+    {
+      title: 'Yoga Class',
+      startUtc: day(2, 6, 0),
+      endUtc: day(2, 7, 0),
+      timezone: 'Europe/London',
+      isRecurring: true,
+      recurrenceEndUtc: day(21, 7, 0),
+    },
+  ];
+
+  for (const event of recurringEvents) {
+    await prisma.event.create({ data: event });
+  }
+
   const events = [
     { title: 'Morning Standup', startUtc: day(0, 9, 0), endUtc: day(0, 9, 30), timezone: 'America/New_York' },
     { title: 'Design Review', startUtc: day(0, 10, 0), endUtc: day(0, 11, 0), timezone: 'Europe/London' },
@@ -63,7 +86,7 @@ async function main() {
     await prisma.event.create({ data: event });
   }
 
-  console.log(`Seeded ${events.length} events across the week`);
+  console.log(`Seeded ${recurringEvents.length} recurring + ${events.length} one-off events`);
 }
 
 main()

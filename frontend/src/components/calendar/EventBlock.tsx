@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Box, Typography, Tooltip } from '@mui/material';
+import RepeatRoundedIcon from '@mui/icons-material/RepeatRounded';
 import { useCalendarStore } from '../../stores/calendarStore';
 import { utcToLocal, formatTimeLabel } from '../../utils/date.utils';
 import { getEventColor, hexToSolidTint } from '../../utils/color.utils';
@@ -36,7 +37,7 @@ export const EventBlock = React.memo(function EventBlock({
 
   return (
     <Tooltip
-      title={`${event.title} · ${startLabel} – ${endLabel}${showTimezoneBadge ? ` (${event.timezone})` : ''}`}
+      title={`${event.title} · ${startLabel} – ${endLabel}${event.isRecurring ? ' (recurring)' : ''}${showTimezoneBadge ? ` · ${event.timezone}` : ''}`}
       placement="top"
       arrow
     >
@@ -78,19 +79,24 @@ export const EventBlock = React.memo(function EventBlock({
           '&:active': { transform: 'scale(0.995)' },
         }}
       >
-        <Typography
-          sx={{
-            fontSize: displayHeight < 30 ? 11 : 12,
-            fontWeight: 600,
-            color,
-            lineHeight: 1.3,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {event.title}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, overflow: 'hidden' }}>
+          {event.isRecurring && (
+            <RepeatRoundedIcon sx={{ fontSize: 11, color, flexShrink: 0 }} />
+          )}
+          <Typography
+            sx={{
+              fontSize: displayHeight < 30 ? 11 : 12,
+              fontWeight: 600,
+              color,
+              lineHeight: 1.3,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {event.title}
+          </Typography>
+        </Box>
         {displayHeight >= 36 && (
           <Typography
             sx={{

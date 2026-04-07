@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Typography, Button, IconButton } from '@mui/material';
+import { Box, Typography, Button, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
@@ -16,6 +16,8 @@ const VIEW_MODES: { value: ViewMode; label: string }[] = [
 ];
 
 function ViewTabs({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode) => void }) {
+  const theme = useTheme();
+  const compact = useMediaQuery(theme.breakpoints.down('sm'));
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Map<ViewMode, HTMLButtonElement>>(new Map());
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -45,9 +47,11 @@ function ViewTabs({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode
       sx={{
         position: 'relative',
         display: 'inline-flex',
+        maxWidth: '100%',
         backgroundColor: palette.hoverBg,
         borderRadius: '10px',
         p: '3px',
+        flexShrink: 0,
       }}
     >
       <Box
@@ -75,9 +79,9 @@ function ViewTabs({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode
           sx={{
             position: 'relative',
             zIndex: 1,
-            px: 2,
-            py: 0.75,
-            fontSize: 13,
+            px: compact ? 1.25 : 2,
+            py: compact ? 0.5 : 0.75,
+            fontSize: compact ? 12 : 13,
             fontWeight: value === mode ? 600 : 500,
             color: value === mode ? palette.primary : palette.secondary,
             border: 'none',
@@ -86,7 +90,7 @@ function ViewTabs({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode
             borderRadius: '8px',
             fontFamily: 'inherit',
             transition: 'color 200ms ease',
-            minWidth: 56,
+            minWidth: compact ? 48 : 56,
             whiteSpace: 'nowrap',
             '&:hover': {
               color: palette.primary,
@@ -115,18 +119,28 @@ export function CalendarHeader() {
     <Box
       sx={{
         display: 'flex',
-        alignItems: 'center',
+        flexDirection: { xs: 'column', md: 'row' },
+        alignItems: { xs: 'stretch', md: 'center' },
         justifyContent: 'space-between',
-        px: 3,
-        py: 1.75,
+        px: { xs: 1.5, sm: 2, md: 3 },
+        py: { xs: 1.25, md: 1.75 },
+        pt: { xs: 'max(12px, env(safe-area-inset-top, 0px))', md: 1.75 },
         backgroundColor: palette.surfaceBg,
         borderBottom: `1px solid ${palette.divider}`,
-        minHeight: 64,
-        gap: 2,
+        minHeight: { xs: 'auto', md: 64 },
+        gap: { xs: 1.5, md: 2 },
         flexShrink: 0,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 1,
+          minWidth: 0,
+        }}
+      >
         <Button
           variant="outlined"
           size="small"
@@ -135,8 +149,8 @@ export function CalendarHeader() {
             borderColor: palette.border,
             color: palette.primary,
             fontWeight: 500,
-            fontSize: 13,
-            px: 2,
+            fontSize: { xs: 12, sm: 13 },
+            px: { xs: 1.5, sm: 2 },
             py: 0.5,
             minWidth: 'auto',
             borderRadius: '8px',
@@ -152,19 +166,34 @@ export function CalendarHeader() {
         </IconButton>
         <Typography
           sx={{
-            fontSize: 20,
+            fontSize: { xs: 17, sm: 18, md: 20 },
             fontWeight: 600,
             letterSpacing: '-0.3px',
             color: palette.primary,
-            ml: 0.5,
+            ml: { xs: 0, sm: 0.5 },
             userSelect: 'none',
+            flex: { xs: '1 1 100%', md: 'none' },
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            order: { xs: 3, md: 0 },
           }}
         >
           {headerLabel}
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: { xs: 1, md: 2 },
+          minWidth: 0,
+          justifyContent: { xs: 'flex-start', md: 'flex-end' },
+        }}
+      >
         <TimezoneSelector />
 
         <ViewTabs value={viewMode} onChange={setViewMode} />

@@ -110,8 +110,12 @@ export const theme = createTheme({
           fontWeight: 500,
           transition: transitions.normal,
           '&:active': { transform: 'scale(0.97)' },
+          '&.Mui-disabled': {
+            cursor: 'not-allowed',
+            pointerEvents: 'auto',
+          },
         },
-        contained: {
+        contained: ({ theme }) => ({
           backgroundColor: palette.accent,
           color: '#FFFFFF',
           boxShadow: '0 1px 3px rgba(99,102,241,0.3)',
@@ -119,26 +123,67 @@ export const theme = createTheme({
             backgroundColor: palette.accentHover,
             boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
           },
-        },
-        outlined: {
+          '&.Mui-disabled': {
+            cursor: 'not-allowed',
+            pointerEvents: 'auto',
+            backgroundColor: theme.palette.action.disabledBackground,
+            color: theme.palette.action.disabled,
+            boxShadow: 'none',
+          },
+          '&.Mui-disabled:hover': {
+            backgroundColor: theme.palette.action.disabledBackground,
+            color: theme.palette.action.disabled,
+            boxShadow: 'none',
+          },
+        }),
+        outlined: ({ theme }) => ({
           borderColor: palette.border,
           color: palette.primary,
           '&:hover': { backgroundColor: palette.hoverBg, borderColor: palette.secondary },
-        },
-        text: {
+          '&.Mui-disabled': {
+            cursor: 'not-allowed',
+            pointerEvents: 'auto',
+            borderColor: theme.palette.action.disabledBackground,
+            color: theme.palette.action.disabled,
+          },
+          '&.Mui-disabled:hover': {
+            borderColor: theme.palette.action.disabledBackground,
+            color: theme.palette.action.disabled,
+            backgroundColor: 'transparent',
+          },
+        }),
+        text: ({ theme }) => ({
           color: palette.secondary,
           '&:hover': { backgroundColor: palette.hoverBg, color: palette.primary },
-        },
+          '&.Mui-disabled': {
+            cursor: 'not-allowed',
+            pointerEvents: 'auto',
+            color: theme.palette.action.disabled,
+          },
+          '&.Mui-disabled:hover': {
+            color: theme.palette.action.disabled,
+            backgroundColor: 'transparent',
+          },
+        }),
       },
     },
     MuiIconButton: {
       defaultProps: { disableRipple: true },
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
           transition: transitions.normal,
           '&:hover': { backgroundColor: palette.hoverBg },
           '&:active': { transform: 'scale(0.93)' },
-        },
+          '&.Mui-disabled': {
+            cursor: 'not-allowed',
+            pointerEvents: 'auto',
+            color: theme.palette.action.disabled,
+          },
+          '&.Mui-disabled:hover': {
+            backgroundColor: 'transparent',
+            color: theme.palette.action.disabled,
+          },
+        }),
       },
     },
     MuiPaper: {
@@ -199,6 +244,17 @@ export const theme = createTheme({
     },
     MuiToggleButton: {
       defaultProps: { disableRipple: true },
+      styleOverrides: {
+        root: {
+          '&.Mui-disabled': {
+            cursor: 'not-allowed',
+            pointerEvents: 'auto',
+          },
+          '&.Mui-disabled:hover': {
+            backgroundColor: 'transparent',
+          },
+        },
+      },
     },
     MuiAutocomplete: {
       styleOverrides: {

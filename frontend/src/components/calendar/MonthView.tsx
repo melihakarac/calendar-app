@@ -64,7 +64,7 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
 
   if (isLoading) {
     return (
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: { xs: 1, sm: 2 } }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 1, gap: 1 }}>
           {WEEKDAY_LABELS.map((label) => (
             <Skeleton
@@ -85,8 +85,11 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
               <Skeleton
                 key={di}
                 variant="rounded"
-                height={80}
-                sx={{ borderRadius: '8px', bgcolor: palette.hoverBg }}
+                sx={{
+                  height: { xs: 64, sm: 80 },
+                  borderRadius: '8px',
+                  bgcolor: palette.hoverBg,
+                }}
               />
             ))}
           </Box>
@@ -96,14 +99,14 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: { xs: 1, sm: 2 } }}>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
         {WEEKDAY_LABELS.map((label) => (
           <Typography
             key={label}
             sx={{
               textAlign: 'center',
-              fontSize: 11,
+              fontSize: { xs: 10, sm: 11 },
               fontWeight: 500,
               letterSpacing: '0.5px',
               color: palette.tertiary,
@@ -124,7 +127,7 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
               display: 'grid',
               gridTemplateColumns: 'repeat(7, 1fr)',
               flex: 1,
-              minHeight: 90,
+              minHeight: { xs: 72, sm: 90 },
               borderTop: `1px solid ${palette.divider}`,
             }}
           >
@@ -142,7 +145,7 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
                   sx={{
                     borderRight: `1px solid ${palette.divider}`,
                     '&:last-child': { borderRight: 'none' },
-                    p: 0.75,
+                    p: { xs: 0.5, sm: 0.75 },
                     cursor: 'pointer',
                     transition: transitions.fast,
                     '&:hover': { backgroundColor: palette.hoverBg },
@@ -155,11 +158,11 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
                 >
                   <Typography
                     sx={{
-                      fontSize: 13,
+                      fontSize: { xs: 12, sm: 13 },
                       fontWeight: today ? 600 : 400,
                       color: today ? '#fff' : palette.primary,
-                      width: 28,
-                      height: 28,
+                      width: { xs: 26, sm: 28 },
+                      height: { xs: 26, sm: 28 },
                       borderRadius: '8px',
                       display: 'flex',
                       alignItems: 'center',
@@ -176,13 +179,13 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
                     const color = getEventColor(event.id);
                     return (
                       <Box
-                        key={event.id}
+                        key={`${event.id}_${event.startUtc}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           openEditForm(event.id);
                         }}
                         sx={{
-                          fontSize: 11,
+                          fontSize: { xs: 10, sm: 11 },
                           fontWeight: 500,
                           color,
                           backgroundColor: `${color}12`,
@@ -207,7 +210,7 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
                   {overflow > 0 && (
                     <Typography
                       sx={{
-                        fontSize: 11,
+                        fontSize: { xs: 10, sm: 11 },
                         color: palette.tertiary,
                         textAlign: 'center',
                         fontWeight: 500,

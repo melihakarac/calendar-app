@@ -55,9 +55,11 @@ export function CalendarApp() {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        height: '100dvh',
+        minHeight: '100vh',
         backgroundColor: palette.pageBg,
         overflow: 'hidden',
+        pb: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
       <CalendarHeader />

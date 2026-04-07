@@ -9,6 +9,8 @@ const mockEvent = {
   startUtc: new Date('2025-06-15T10:00:00.000Z'),
   endUtc: new Date('2025-06-15T11:00:00.000Z'),
   timezone: 'America/New_York',
+  isRecurring: false,
+  recurrenceEndUtc: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -30,6 +32,7 @@ describe('EventsService', () => {
             update: jest.fn(),
             delete: jest.fn(),
             findOverlapping: jest.fn(),
+            findAllEvents: jest.fn(),
           },
         },
       ],
@@ -41,7 +44,7 @@ describe('EventsService', () => {
 
   describe('create', () => {
     it('should create an event when no overlap exists', async () => {
-      repository.findOverlapping.mockResolvedValue([]);
+      repository.findAllEvents.mockResolvedValue([]);
       repository.create.mockResolvedValue(mockEvent);
 
       const result = await service.create({
@@ -52,15 +55,10 @@ describe('EventsService', () => {
       });
 
       expect(result).toEqual(mockEvent);
-      expect(repository.findOverlapping).toHaveBeenCalledWith(
-        new Date('2025-06-15T14:00:00.000Z'),
-        new Date('2025-06-15T15:00:00.000Z'),
-        undefined,
-      );
     });
 
     it('should throw ConflictException when overlap exists', async () => {
-      repository.findOverlapping.mockResolvedValue([mockEvent]);
+      repository.findAllEvents.mockResolvedValue([mockEvent]);
 
       await expect(
         service.create({
@@ -73,7 +71,7 @@ describe('EventsService', () => {
     });
 
     it('should detect overlap when new event completely contains existing', async () => {
-      repository.findOverlapping.mockResolvedValue([mockEvent]);
+      repository.findAllEvents.mockResolvedValue([mockEvent]);
 
       await expect(
         service.create({
@@ -86,21 +84,70 @@ describe('EventsService', () => {
     });
 
     it('should NOT detect overlap for adjacent events (end equals start)', async () => {
-      repository.findOverlapping.mockResolvedValue([]);
+      const adjacentEvent = {
+        ...mockEvent,
+        id: 'adjacent-id',
+        startUtc: new Date('2025-06-15T09:00:00.000Z'),
+        endUtc: new Date('2025-06-15T10:00:00.000Z'),
+      };
+      repository.findAllEvents.mockResolvedValue([adjacentEvent]);
       repository.create.mockResolvedValue({
         ...mockEvent,
-        startUtc: new Date('2025-06-15T11:00:00.000Z'),
-        endUtc: new Date('2025-06-15T12:00:00.000Z'),
+        startUtc: new Date('2025-06-15T10:00:00.000Z'),
+        endUtc: new Date('2025-06-15T11:00:00.000Z'),
       });
 
       const result = await service.create({
         title: 'Adjacent Event',
-        startUtc: '2025-06-15T11:00:00.000Z',
-        endUtc: '2025-06-15T12:00:00.000Z',
+        startUtc: '2025-06-15T10:00:00.000Z',
+        endUtc: '2025-06-15T11:00:00.000Z',
         timezone: 'America/New_York',
       });
 
       expect(result).toBeDefined();
+    });
+
+    it('should detect conflict with recurring event occurrences', async () => {
+      const recurringEvent = {
+        ...mockEvent,
+        id: 'recurring-id',
+        title: 'Weekly Meeting',
+        startUtc: new Date('2025-06-08T10:00:00.000Z'),
+        endUtc: new Date('2025-06-08T11:00:00.000Z'),
+        isRecurring: true,
+        recurrenceEndUtc: new Date('2025-06-29T11:00:00.000Z'),
+      };
+      repository.findAllEvents.mockResolvedValue([recurringEvent]);
+
+      await expect(
+        service.create({
+          title: 'Conflicting with recurrence',
+          startUtc: '2025-06-15T10:30:00.000Z',
+          endUtc: '2025-06-15T11:30:00.000Z',
+          timezone: 'America/New_York',
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should create recurring event when no overlap', async () => {
+      repository.findAllEvents.mockResolvedValue([]);
+      const recurringResult = {
+        ...mockEvent,
+        isRecurring: true,
+        recurrenceEndUtc: new Date('2025-07-15T11:00:00.000Z'),
+      };
+      repository.create.mockResolvedValue(recurringResult);
+
+      const result = await service.create({
+        title: 'New Recurring',
+        startUtc: '2025-06-15T14:00:00.000Z',
+        endUtc: '2025-06-15T15:00:00.000Z',
+        timezone: 'America/New_York',
+        isRecurring: true,
+        recurrenceEndUtc: '2025-07-15T15:00:00.000Z',
+      });
+
+      expect(result.isRecurring).toBe(true);
     });
   });
 
@@ -108,7 +155,7 @@ describe('EventsService', () => {
     it('should update when no overlap exists', async () => {
       const updatedEvent = { ...mockEvent, title: 'Updated Title' };
       repository.findById.mockResolvedValue(mockEvent);
-      repository.findOverlapping.mockResolvedValue([]);
+      repository.findAllEvents.mockResolvedValue([]);
       repository.update.mockResolvedValue(updatedEvent);
 
       const result = await service.update(mockEvent.id, { title: 'Updated Title' });
@@ -126,7 +173,7 @@ describe('EventsService', () => {
 
     it('should exclude self when checking overlap on update', async () => {
       repository.findById.mockResolvedValue(mockEvent);
-      repository.findOverlapping.mockResolvedValue([]);
+      repository.findAllEvents.mockResolvedValue([]);
       repository.update.mockResolvedValue(mockEvent);
 
       await service.update(mockEvent.id, {
@@ -134,11 +181,7 @@ describe('EventsService', () => {
         endUtc: '2025-06-15T11:30:00.000Z',
       });
 
-      expect(repository.findOverlapping).toHaveBeenCalledWith(
-        new Date('2025-06-15T10:30:00.000Z'),
-        new Date('2025-06-15T11:30:00.000Z'),
-        mockEvent.id,
-      );
+      expect(repository.findAllEvents).toHaveBeenCalledWith(mockEvent.id);
     });
   });
 

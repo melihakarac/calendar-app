@@ -39,7 +39,11 @@ export function TimezoneSelector() {
       getOptionLabel={formatTimezoneLabel}
       size="small"
       disableClearable
-      sx={{ width: 260 }}
+      sx={{
+        width: { xs: '100%', sm: 220, md: 260 },
+        minWidth: { xs: 0, sm: 200 },
+        flex: { xs: '1 1 100%', md: '0 0 auto' },
+      }}
       renderInput={(params) => (
         <TextField
           {...params}

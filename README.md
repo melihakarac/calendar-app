@@ -4,46 +4,66 @@ A production-quality, single-user calendar scheduling application with CRUD even
 
 ## Tech Stack
 
-| Layer          | Technology                                                     |
-| -------------- | -------------------------------------------------------------- |
-| Frontend       | React 19, TypeScript, Material UI 7, Zustand, TanStack Query  |
+| Layer          | Technology                                                    |
+| -------------- | ------------------------------------------------------------- |
+| Frontend       | React 19, TypeScript, Material UI 7, Zustand, TanStack Query |
 | Backend        | Node.js, NestJS 11, TypeScript                                |
 | Database       | PostgreSQL 16, Prisma ORM 7                                   |
 | Infrastructure | Docker, docker-compose                                        |
-| Timezone       | date-fns-tz                                                    |
-| Validation     | Zod                                                            |
+| Timezone       | date-fns-tz                                                   |
+| Validation     | Zod                                                           |
 
 ## Prerequisites
 
 - Node.js 20+
-- Docker & Docker Compose
 - npm 9+
+- Docker & Docker Compose (for the database, or a local PostgreSQL 16 instance)
 
-## Quick Start
+## Quick Start (Local Development)
 
-### 1. Start the database
-
-```bash
-docker-compose up -d db
-```
-
-### 2. Install dependencies
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Set up the database
+### 2. Start the database
+
+**Option A — Docker (recommended):**
 
 ```bash
-cd backend
-cp .env.example .env
-npx prisma db push
-npm run db:seed
-cd ..
+docker run -d --name calendar-db \
+  -e POSTGRES_USER=user \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=challenge_db \
+  -p 5432:5432 postgres:16
 ```
 
-### 4. Run development servers
+**Option B — docker-compose (database only):**
+
+```bash
+docker-compose up -d db
+```
+
+> If using Option B, update `backend/.env` to match the docker-compose credentials:
+> `DATABASE_URL="postgresql://calendar:calendar@localhost:5432/calendar"`
+
+### 3. Configure environment
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edit `backend/.env` if your database credentials differ from the defaults.
+
+### 4. Push schema & seed data
+
+```bash
+npm run db:push --workspace=backend
+npm run db:seed --workspace=backend
+```
+
+### 5. Run development servers
 
 In separate terminals:
 
@@ -52,48 +72,86 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-The frontend will be available at `http://localhost:5173` and the backend API at `http://localhost:3001/api/v1`.
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:3000/api/v1`
 
 ## Docker (Full Stack)
 
-To run everything with Docker:
+To run the entire stack (database, backend, frontend) with Docker:
 
 ```bash
 docker-compose up --build
 ```
 
-This starts PostgreSQL, the backend, and the frontend. Access the app at `http://localhost:5173`.
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:3001/api/v1`
 
 ## API Endpoints
 
-| Method   | Endpoint           | Description        |
-| -------- | ------------------ | ------------------ |
-| `GET`    | `/api/v1/events`   | List events        |
-| `GET`    | `/api/v1/events/:id` | Get single event |
-| `POST`   | `/api/v1/events`   | Create event       |
-| `PATCH`  | `/api/v1/events/:id` | Update event     |
-| `DELETE` | `/api/v1/events/:id` | Delete event     |
+| Method   | Endpoint             | Description                          |
+| -------- | -------------------- | ------------------------------------ |
+| `GET`    | `/api/v1/events`     | List events (query: `from`, `to`)    |
+| `GET`    | `/api/v1/events/:id` | Get single event                     |
+| `POST`   | `/api/v1/events`     | Create event                         |
+| `PATCH`  | `/api/v1/events/:id` | Update event                         |
+| `DELETE` | `/api/v1/events/:id` | Delete event                         |
+
+### Request/Response Example
+
+**Create Event:**
+
+```json
+POST /api/v1/events
+{
+  "title": "Team Standup",
+  "startUtc": "2026-04-07T14:00:00.000Z",
+  "endUtc": "2026-04-07T14:30:00.000Z",
+  "timezone": "America/New_York"
+}
+```
 
 ## Testing
 
 ```bash
-cd backend
-npm test
+# Backend unit tests (Jest)
+npm test --workspace=backend
+
+# Frontend unit tests (Vitest)
+npm test --workspace=frontend
+
+# Backend E2E tests (requires running database)
+npm run test:e2e --workspace=backend
 ```
+
+## Environment Variables
+
+| Variable         | Default                                          | Description                  |
+| ---------------- | ------------------------------------------------ | ---------------------------- |
+| `DATABASE_URL`   | `postgresql://user:password@localhost:5432/...`   | PostgreSQL connection string |
+| `PORT`           | `3000`                                           | Backend server port          |
+| `CORS_ORIGIN`    | `http://localhost:5173`                          | Allowed CORS origin          |
+| `BODY_LIMIT`     | `100kb`                                          | Max request body size        |
+| `THROTTLE_TTL`   | `60000`                                          | Rate limit window (ms)       |
+| `THROTTLE_LIMIT` | `100`                                            | Max requests per window      |
 
 ## Project Structure
 
 ```
 ├── docker-compose.yml
-├── backend/           # NestJS API
-│   ├── prisma/        # Schema & seed
+├── package.json              # Root workspace config
+├── backend/                  # NestJS API
+│   ├── prisma/               # Schema, migrations & seed
 │   └── src/
-│       ├── events/    # CRUD module
-│       └── common/    # Filters, interceptors, pipes
-├── frontend/          # React SPA
+│       ├── events/           # CRUD module (controller, service, repository)
+│       ├── prisma/           # PrismaService (database connection)
+│       ├── common/           # Filters, interceptors, pipes
+│       └── shared/           # Zod schemas, constants
+├── frontend/                 # React SPA
 │   └── src/
-│       ├── components/calendar/  # Calendar views
+│       ├── components/calendar/  # Calendar views & UI components
 │       ├── hooks/                # React Query hooks
-│       ├── stores/               # Zustand state
-│       └── theme/                # MUI theme
+│       ├── stores/               # Zustand state management
+│       ├── utils/                # Date, timezone, color & validation utilities
+│       ├── theme/                # MUI theme & design tokens
+│       └── types/                # TypeScript type definitions
 ```

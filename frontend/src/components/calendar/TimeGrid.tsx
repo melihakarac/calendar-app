@@ -5,14 +5,12 @@ import { toZonedTime } from 'date-fns-tz';
 import { EventBlock } from './EventBlock';
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { useCalendarStore } from '../../stores/calendarStore';
+import { useResponsiveCalendarLayout } from '../../hooks/useResponsiveCalendarLayout';
 import { formatHourLabel, createDateWithTime, formatTimeLabel } from '../../utils/date.utils';
 import { palette } from '../../theme/theme';
 import type { CalendarEvent } from '../../types';
 
-export const HOUR_HEIGHT = 60;
 const TOTAL_HOURS = 24;
-const GRID_HEIGHT = HOUR_HEIGHT * TOTAL_HOURS;
-export const GUTTER_WIDTH = 64;
 const SNAP_MINUTES = 15;
 
 interface TimeGridProps {
@@ -35,8 +33,12 @@ interface DragState {
   currentMinutes: number;
 }
 
-function snapToGrid(y: number): number {
-  const totalMinutes = (y / HOUR_HEIGHT) * 60;
+function minutesToPx(minutes: number, hourHeight: number): number {
+  return (minutes / 60) * hourHeight;
+}
+
+function snapYToMinutes(y: number, hourHeight: number, gridHeightPx: number): number {
+  const totalMinutes = (Math.max(0, Math.min(y, gridHeightPx)) / hourHeight) * 60;
   return Math.round(totalMinutes / SNAP_MINUTES) * SNAP_MINUTES;
 }
 
@@ -74,14 +76,24 @@ function layoutOverlapping(events: PositionedEvent[]): PositionedEvent[] {
   return sorted;
 }
 
-function SelectionOverlay({ drag }: { drag: DragState }) {
+function SelectionOverlay({
+  drag,
+  hourHeight,
+  compact,
+}: {
+  drag: DragState;
+  hourHeight: number;
+  compact: boolean;
+}) {
   const topMin = Math.min(drag.startMinutes, drag.currentMinutes);
   const bottomMin = Math.max(drag.startMinutes, drag.currentMinutes);
-  const height = Math.max(bottomMin - topMin, SNAP_MINUTES);
+  const durationMin = Math.max(bottomMin - topMin, SNAP_MINUTES);
+  const topPx = minutesToPx(topMin, hourHeight);
+  const heightPx = minutesToPx(durationMin, hourHeight);
 
   const startH = Math.floor(topMin / 60);
   const startM = topMin % 60;
-  const endTotal = topMin + height;
+  const endTotal = topMin + durationMin;
   const endH = Math.floor(endTotal / 60);
   const endM = endTotal % 60;
 
@@ -92,10 +104,10 @@ function SelectionOverlay({ drag }: { drag: DragState }) {
     <Box
       sx={{
         position: 'absolute',
-        top: topMin,
+        top: topPx,
         left: 2,
         right: 2,
-        height,
+        height: heightPx,
         backgroundColor: palette.accentLight,
         border: `1.5px solid ${palette.accentMuted}`,
         borderLeft: `3px solid ${palette.accent}`,
@@ -103,14 +115,14 @@ function SelectionOverlay({ drag }: { drag: DragState }) {
         zIndex: 5,
         pointerEvents: 'none',
         overflow: 'visible',
-        px: 1,
+        px: compact ? 0.5 : 1,
         py: 0.25,
         transition: 'height 60ms ease, top 60ms ease',
       }}
     >
       <Typography
         sx={{
-          fontSize: 11,
+          fontSize: compact ? 10 : 11,
           fontWeight: 600,
           color: palette.accent,
           lineHeight: 1,
@@ -125,6 +137,9 @@ function SelectionOverlay({ drag }: { drag: DragState }) {
 
 export const TimeGrid = React.memo(function TimeGrid({ days, events }: TimeGridProps) {
   const { viewingTimezone, openCreateForm } = useCalendarStore();
+  const { gutterWidth, hourHeight, isMobile } = useResponsiveCalendarLayout();
+
+  const gridHeightPx = TOTAL_HOURS * hourHeight;
 
   const [drag, setDrag] = useState<DragState | null>(null);
   const isDragging = useRef(false);
@@ -152,11 +167,14 @@ export const TimeGrid = React.memo(function TimeGrid({ days, events }: TimeGridP
     return map;
   }, [events, days, viewingTimezone]);
 
-  const getMinutesFromY = useCallback((el: HTMLDivElement, clientY: number) => {
-    const rect = el.getBoundingClientRect();
-    const y = Math.max(0, Math.min(clientY - rect.top, GRID_HEIGHT));
-    return snapToGrid(y);
-  }, []);
+  const getMinutesFromY = useCallback(
+    (el: HTMLDivElement, clientY: number) => {
+      const rect = el.getBoundingClientRect();
+      const y = Math.max(0, Math.min(clientY - rect.top, gridHeightPx));
+      return snapYToMinutes(y, hourHeight, gridHeightPx);
+    },
+    [gridHeightPx, hourHeight],
+  );
 
   const handleMouseDown = useCallback(
     (day: Date, e: React.MouseEvent<HTMLDivElement>) => {
@@ -233,11 +251,12 @@ export const TimeGrid = React.memo(function TimeGrid({ days, events }: TimeGridP
         display: 'flex',
         position: 'relative',
         userSelect: 'auto',
+        minWidth: 0,
       }}
     >
       <Box
         sx={{
-          width: GUTTER_WIDTH,
+          width: gutterWidth,
           flexShrink: 0,
           position: 'relative',
           borderRight: `1px solid ${palette.divider}`,
@@ -247,23 +266,24 @@ export const TimeGrid = React.memo(function TimeGrid({ days, events }: TimeGridP
           <Box
             key={hour}
             sx={{
-              height: HOUR_HEIGHT,
+              height: hourHeight,
               display: 'flex',
               alignItems: 'flex-start',
               justifyContent: 'flex-end',
-              pr: 1.5,
+              pr: { xs: 0.5, sm: 1 },
             }}
           >
             {hour > 0 && (
               <Typography
                 sx={{
-                  fontSize: 11,
+                  fontSize: { xs: 9, sm: 10, md: 11 },
                   fontWeight: 500,
                   letterSpacing: '0.2px',
                   color: palette.tertiary,
                   position: 'relative',
-                  top: -7,
+                  top: { xs: -5, sm: -7 },
                   userSelect: 'none',
+                  lineHeight: 1,
                 }}
               >
                 {formatHourLabel(hour)}
@@ -273,7 +293,7 @@ export const TimeGrid = React.memo(function TimeGrid({ days, events }: TimeGridP
         ))}
       </Box>
 
-      <Box sx={{ display: 'flex', flex: 1 }}>
+      <Box sx={{ display: 'flex', flex: 1, minWidth: 0 }}>
         {days.map((day) => {
           const dayEvents = eventsByDay.get(day.toDateString()) || [];
           const dayStart = startOfDay(day);
@@ -303,10 +323,12 @@ export const TimeGrid = React.memo(function TimeGrid({ days, events }: TimeGridP
               aria-label={day.toLocaleDateString()}
               sx={{
                 flex: 1,
+                minWidth: { xs: days.length > 1 ? 72 : 0, sm: days.length > 1 ? 80 : 0, md: 0 },
                 position: 'relative',
-                height: GRID_HEIGHT,
+                height: gridHeightPx,
                 borderRight: isSingleDay ? 'none' : `1px solid ${palette.divider}`,
                 cursor: 'crosshair',
+                touchAction: 'none',
                 '&:last-child': { borderRight: 'none' },
               }}
               onMouseDown={(e) => handleMouseDown(day, e)}
@@ -315,7 +337,7 @@ export const TimeGrid = React.memo(function TimeGrid({ days, events }: TimeGridP
                 <Box
                   key={hour}
                   sx={{
-                    height: HOUR_HEIGHT,
+                    height: hourHeight,
                     borderBottom: `1px solid ${palette.divider}`,
                     '&:last-child': { borderBottom: 'none' },
                   }}
@@ -324,18 +346,20 @@ export const TimeGrid = React.memo(function TimeGrid({ days, events }: TimeGridP
 
               {laid.map((pe) => (
                 <EventBlock
-                  key={pe.event.id}
+                  key={`${pe.event.id}_${pe.event.startUtc}`}
                   event={pe.event}
-                  top={pe.top}
-                  height={pe.height}
+                  top={minutesToPx(pe.top, hourHeight)}
+                  height={minutesToPx(pe.height, hourHeight)}
                   left={(pe.column / pe.totalColumns) * 100}
                   width={(1 / pe.totalColumns) * 100}
                 />
               ))}
 
-              {showSelection && <SelectionOverlay drag={drag} />}
+              {showSelection && drag && (
+                <SelectionOverlay drag={drag} hourHeight={hourHeight} compact={isMobile} />
+              )}
 
-              <CurrentTimeIndicator day={day} hourHeight={HOUR_HEIGHT} />
+              <CurrentTimeIndicator day={day} hourHeight={hourHeight} />
             </Box>
           );
         })}

@@ -10,7 +10,9 @@ import type { CreateEventPayload, UpdateEventPayload, CalendarEvent } from '../t
 
 export const eventKeys = {
   all: ['events'] as const,
-  list: (from: string, to: string) => ['events', 'list', { from, to }] as const,
+  /** Prefix for all cached event list queries (from/to vary). */
+  listRoot: ['events', 'list'] as const,
+  list: (from: string, to: string) => [...eventKeys.listRoot, { from, to }] as const,
   detail: (id: string) => ['events', 'detail', id] as const,
 };
 
@@ -59,9 +61,8 @@ export function useDeleteEvent() {
     mutationFn: (id: string) => deleteEvent(id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: eventKeys.all });
-      queryClient.removeQueries({ queryKey: eventKeys.detail(id) });
       const queries = queryClient.getQueriesData<CalendarEvent[]>({
-        queryKey: ['events', 'list'],
+        queryKey: eventKeys.listRoot,
       });
       const snapshot = new Map(queries);
       for (const [key, data] of queries) {
@@ -81,8 +82,11 @@ export function useDeleteEvent() {
         }
       }
     },
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: eventKeys.detail(id) });
+    },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['events', 'list'] });
+      queryClient.invalidateQueries({ queryKey: eventKeys.listRoot });
     },
   });
 }
