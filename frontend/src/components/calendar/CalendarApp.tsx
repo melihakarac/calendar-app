@@ -85,7 +85,11 @@ export function CalendarApp() {
           className={animClass}
           sx={{
             flex: 1,
+            minHeight: 0,
             overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
             '&.calendar-view-exit': {
               opacity: 0,
               transition: 'opacity 120ms ease-out',
@@ -97,16 +101,18 @@ export function CalendarApp() {
         >
           <Suspense
             fallback={
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ flex: 1, minHeight: 0, p: 3 }}>
                 {Array.from({ length: 8 }, (_, i) => (
                   <Skeleton key={i} variant="rounded" height={60} sx={{ mb: 0.5, borderRadius: '6px' }} />
                 ))}
               </Box>
             }
           >
-            {rendered === 'day' && <DayView events={events} isLoading={isLoading} />}
-            {rendered === 'week' && <WeekView events={events} isLoading={isLoading} />}
-            {rendered === 'month' && <MonthView events={events} isLoading={isLoading} />}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, width: '100%' }}>
+              {rendered === 'day' && <DayView events={events} isLoading={isLoading} />}
+              {rendered === 'week' && <WeekView events={events} isLoading={isLoading} />}
+              {rendered === 'month' && <MonthView events={events} isLoading={isLoading} />}
+            </Box>
           </Suspense>
         </Box>
       </ErrorBoundary>

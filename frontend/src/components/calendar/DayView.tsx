@@ -60,7 +60,7 @@ export function DayView({ events, isLoading }: DayViewProps) {
   }
 
   return (
-    <Box sx={{ overflow: 'auto', height: '100%' }}>
+    <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0, width: '100%' }}>
       <TimeGrid days={days} events={events} />
     </Box>
   );

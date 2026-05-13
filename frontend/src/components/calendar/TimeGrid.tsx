@@ -26,6 +26,50 @@ interface PositionedEvent {
   totalColumns: number;
 }
 
+function intervalsOverlapMinutes(aTop: number, aHeight: number, bTop: number, bHeight: number): boolean {
+  const aEnd = aTop + aHeight;
+  const bEnd = bTop + bHeight;
+  return aTop < bEnd && bTop < aEnd;
+}
+
+function buildOverlapClusters(events: PositionedEvent[]): PositionedEvent[][] {
+  const n = events.length;
+  if (n === 0) return [];
+  const parent = Array.from({ length: n }, (_, i) => i);
+
+  const find = (i: number): number => {
+    if (parent[i] !== i) parent[i] = find(parent[i]!);
+    return parent[i]!;
+  };
+
+  const union = (i: number, j: number) => {
+    const pi = find(i);
+    const pj = find(j);
+    if (pi !== pj) parent[pj] = pi;
+  };
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const a = events[i]!;
+      const b = events[j]!;
+      if (intervalsOverlapMinutes(a.top, a.height, b.top, b.height)) union(i, j);
+    }
+  }
+
+  const byRoot = new Map<number, PositionedEvent[]>();
+  for (let i = 0; i < n; i++) {
+    const root = find(i);
+    let list = byRoot.get(root);
+    if (!list) {
+      list = [];
+      byRoot.set(root, list);
+    }
+    list.push(events[i]!);
+  }
+
+  return Array.from(byRoot.values());
+}
+
 interface DragState {
   dayKey: string;
   day: Date;
@@ -42,18 +86,20 @@ function snapYToMinutes(y: number, hourHeight: number, gridHeightPx: number): nu
   return Math.round(totalMinutes / SNAP_MINUTES) * SNAP_MINUTES;
 }
 
-function layoutOverlapping(events: PositionedEvent[]): PositionedEvent[] {
-  if (events.length === 0) return [];
+function layoutClusterColumns(cluster: PositionedEvent[]): PositionedEvent[] {
+  if (cluster.length === 0) return [];
 
-  const sorted = [...events].sort((a, b) => a.top - b.top || b.height - a.height);
+  const sorted = [...cluster].sort((a, b) => a.top - b.top || b.height - a.height);
   const columns: PositionedEvent[][] = [];
 
   for (const ev of sorted) {
     let placed = false;
     for (let col = 0; col < columns.length; col++) {
-      const colArr = columns[col];
-      const lastInCol = colArr?.[colArr.length - 1];
-      if (lastInCol && lastInCol.top + lastInCol.height <= ev.top) {
+      const colArr = columns[col]!;
+      const conflicts = colArr.some((existing) =>
+        intervalsOverlapMinutes(existing.top, existing.height, ev.top, ev.height),
+      );
+      if (!conflicts) {
         ev.column = col;
         colArr.push(ev);
         placed = true;
@@ -66,14 +112,23 @@ function layoutOverlapping(events: PositionedEvent[]): PositionedEvent[] {
     }
   }
 
-  const totalCols = columns.length;
-  for (const col of columns) {
-    for (const ev of col) {
-      ev.totalColumns = totalCols;
-    }
+  const totalCols = Math.max(columns.length, 1);
+  for (const ev of sorted) {
+    ev.totalColumns = totalCols;
   }
 
   return sorted;
+}
+
+/** Layout overlaps per day: only events in the same time-overlap cluster share column width. */
+function layoutOverlapping(events: PositionedEvent[]): PositionedEvent[] {
+  if (events.length === 0) return [];
+  const clusters = buildOverlapClusters(events);
+  const out: PositionedEvent[] = [];
+  for (const c of clusters) {
+    out.push(...layoutClusterColumns(c));
+  }
+  return out;
 }
 
 function SelectionOverlay({

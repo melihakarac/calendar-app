@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Box, Typography, Skeleton } from '@mui/material';
+import { Box, Typography, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import {
   startOfMonth,
   endOfMonth,
@@ -27,6 +27,10 @@ interface MonthViewProps {
 }
 
 export function MonthView({ events, isLoading }: MonthViewProps) {
+  const theme = useTheme();
+  const compactMonth = useMediaQuery(theme.breakpoints.down('sm'));
+  const maxVisibleEvents = compactMonth ? 2 : MAX_VISIBLE_EVENTS;
+
   const { selectedDate, setSelectedDate, setViewMode, viewingTimezone, openEditForm } =
     useCalendarStore();
 
@@ -64,8 +68,16 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
 
   if (isLoading) {
     return (
-      <Box sx={{ p: { xs: 1, sm: 2 } }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 1, gap: 1 }}>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
+          p: { xs: 0.75, sm: 2 },
+          pb: 'max(12px, env(safe-area-inset-bottom, 12px))',
+        }}
+      >
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', mb: 1, gap: 1 }}>
           {WEEKDAY_LABELS.map((label) => (
             <Skeleton
               key={label}
@@ -79,7 +91,12 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
         {Array.from({ length: 5 }, (_, wi) => (
           <Box
             key={wi}
-            sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 1 }}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+              gap: 1,
+              mb: 1,
+            }}
           >
             {Array.from({ length: 7 }, (_, di) => (
               <Skeleton
@@ -99,12 +116,32 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: { xs: 1, sm: 2 } }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
+    <Box
+      sx={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        overflow: 'hidden',
+        width: '100%',
+        maxWidth: '100%',
+        p: { xs: 0.75, sm: 2 },
+        pb: 'max(12px, env(safe-area-inset-bottom, 12px))',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+          mb: 0.5,
+          minWidth: 0,
+        }}
+      >
         {WEEKDAY_LABELS.map((label) => (
           <Typography
             key={label}
             sx={{
+              m: 0,
               textAlign: 'center',
               fontSize: { xs: 10, sm: 11 },
               fontWeight: 500,
@@ -119,15 +156,29 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
         ))}
       </Box>
 
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          minWidth: 0,
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {weeks.map((week, wi) => (
           <Box
             key={wi}
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(7, 1fr)',
-              flex: 1,
-              minHeight: { xs: 72, sm: 90 },
+              gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+              gridTemplateRows: 'minmax(0, 1fr)',
+              flex: '1 1 0%',
+              height: '100%',
+              minHeight: 0,
+              minWidth: 0,
+              overflow: 'hidden',
+              alignContent: 'stretch',
               borderTop: `1px solid ${palette.divider}`,
             }}
           >
@@ -135,7 +186,7 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
               const dayEvents = eventsByDay.get(day.toDateString()) || [];
               const today = isToday(day);
               const inMonth = isSameMonth(day, selectedDate);
-              const overflow = dayEvents.length - MAX_VISIBLE_EVENTS;
+              const overflow = dayEvents.length - maxVisibleEvents;
 
               return (
                 <Box
@@ -143,11 +194,20 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
                   role="gridcell"
                   aria-label={day.toLocaleDateString()}
                   sx={{
+                    minWidth: 0,
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    alignSelf: 'stretch',
                     borderRight: `1px solid ${palette.divider}`,
                     '&:last-child': { borderRight: 'none' },
-                    p: { xs: 0.5, sm: 0.75 },
+                    p: { xs: 0.35, sm: 0.75 },
+                    pt: { xs: 0.35, sm: 0.5 },
                     cursor: 'pointer',
                     transition: transitions.fast,
+                    touchAction: 'manipulation',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
                     '&:hover': { backgroundColor: palette.hoverBg },
                     opacity: inMonth ? 1 : 0.35,
                   }}
@@ -158,24 +218,37 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
                 >
                   <Typography
                     sx={{
-                      fontSize: { xs: 12, sm: 13 },
+                      flexShrink: 0,
+                      m: 0,
+                      fontSize: { xs: 11, sm: 13 },
                       fontWeight: today ? 600 : 400,
                       color: today ? '#fff' : palette.primary,
-                      width: { xs: 26, sm: 28 },
-                      height: { xs: 26, sm: 28 },
-                      borderRadius: '8px',
+                      width: { xs: 24, sm: 28 },
+                      height: { xs: 24, sm: 28 },
+                      borderRadius: { xs: '6px', sm: '8px' },
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: today ? palette.accent : 'transparent',
                       mx: 'auto',
-                      mb: 0.5,
+                      mb: { xs: 0.25, sm: 0.5 },
                     }}
                   >
                     {format(day, 'd')}
                   </Typography>
 
-                  {dayEvents.slice(0, MAX_VISIBLE_EVENTS).map((event) => {
+                  <Box
+                    sx={{
+                      flex: '1 1 0%',
+                      minHeight: 0,
+                      minWidth: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.125,
+                      overflow: 'hidden',
+                    }}
+                  >
+                  {dayEvents.slice(0, maxVisibleEvents).map((event) => {
                     const color = getEventColor(event.id);
                     return (
                       <Box
@@ -185,15 +258,17 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
                           openEditForm(event.id);
                         }}
                         sx={{
-                          fontSize: { xs: 10, sm: 11 },
+                          flexShrink: 0,
+                          maxWidth: '100%',
+                          fontSize: { xs: '0.5625rem', sm: 11 },
+                          lineHeight: 1.25,
                           fontWeight: 500,
                           color,
                           backgroundColor: `${color}12`,
                           borderLeft: `2px solid ${color}`,
                           borderRadius: '4px',
-                          px: 0.5,
+                          px: { xs: 0.375, sm: 0.5 },
                           py: 0.125,
-                          mb: 0.25,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -209,16 +284,27 @@ export function MonthView({ events, isLoading }: MonthViewProps) {
 
                   {overflow > 0 && (
                     <Typography
+                      component="div"
+                      variant="caption"
+                      title={`${overflow} more events`}
                       sx={{
-                        fontSize: { xs: 10, sm: 11 },
+                        flexShrink: 0,
+                        m: 0,
+                        fontSize: { xs: '0.5625rem', sm: 11 },
+                        lineHeight: 1.25,
                         color: palette.tertiary,
                         textAlign: 'center',
                         fontWeight: 500,
+                        pt: { xs: 0.125, sm: 0.25 },
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
                       }}
                     >
                       +{overflow} more
                     </Typography>
                   )}
+                  </Box>
                 </Box>
               );
             })}

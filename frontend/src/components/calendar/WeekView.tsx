@@ -66,7 +66,7 @@ export function WeekView({ events, isLoading }: WeekViewProps) {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, width: '100%' }}>
       <Box
         sx={{
           overflowX: { xs: 'hidden', sm: 'auto' },
