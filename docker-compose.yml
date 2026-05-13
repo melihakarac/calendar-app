@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:16-alpine
@@ -26,6 +24,8 @@ services:
       DATABASE_URL: postgresql://calendar:calendar@db:5432/calendar
       PORT: 3001
       CORS_ORIGIN: http://localhost:5173
+      SEED_TIMEZONE: ${SEED_TIMEZONE:-UTC}
+      # SKIP_AUTO_SEED: "1"  # uncomment to skip prisma/seed.ts on startup (keep events across restarts)
     depends_on:
       db:
         condition: service_healthy

@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { addDays } from 'date-fns';
+import { toDate } from 'date-fns-tz';
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -9,13 +11,64 @@ if (!connectionString) {
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+/**
+ * IANA zone used to interpret calendar days in `day()`.
+ * Must match the browser calendar for "today" to line up with seeded rows.
+ * Docker: set `SEED_TIMEZONE` (or `TZ`) to the same value as
+ * `Intl.DateTimeFormat().resolvedOptions().timeZone` in DevTools.
+ */
+function seedTimeZone(): string {
+  return process.env.SEED_TIMEZONE || process.env.TZ || 'UTC';
+}
+
+function calendarYmdInZone(now: Date, timeZone: string): { y: number; mo: number; da: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const y = Number(parts.find((p) => p.type === 'year')!.value);
+  const mo = Number(parts.find((p) => p.type === 'month')!.value) - 1;
+  const da = Number(parts.find((p) => p.type === 'day')!.value);
+  return { y, mo, da };
+}
+
+/** `offset` days from "today" in {@link seedTimeZone}, at `hour`:`min` wall time in that zone. */
 function day(offset: number, hour: number, min = 0): Date {
+  const tz = seedTimeZone();
   const now = new Date();
-  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return new Date(base.getTime() + offset * 86400000 + hour * 3600000 + min * 60000);
+  const { y, mo, da } = calendarYmdInZone(now, tz);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const midnight = toDate(`${y}-${pad(mo + 1)}-${pad(da)}T00:00:00`, { timeZone: tz });
+  const shifted = addDays(midnight, offset);
+  const ymd = calendarYmdInZone(shifted, tz);
+  const iso = `${ymd.y}-${pad(ymd.mo + 1)}-${pad(ymd.da)}T${pad(hour)}:${pad(min)}:00`;
+  return toDate(iso, { timeZone: tz });
+}
+
+/** Always overlap the current query window: instant-based slots from seed time. */
+function rollingDemoEvents(anchor: Date): Array<{
+  title: string;
+  startUtc: Date;
+  endUtc: Date;
+  timezone: string;
+}> {
+  const hours = [1, 3, 7, 14, 22, 30];
+  return hours.map((h) => {
+    const start = new Date(anchor.getTime() + h * 3600000);
+    const end = new Date(start.getTime() + 45 * 60000);
+    return {
+      title: `Demo — next +${h}h`,
+      startUtc: start,
+      endUtc: end,
+      timezone: 'UTC',
+    };
+  });
 }
 
 async function main() {
+  const anchor = new Date();
   await prisma.event.deleteMany();
 
   const recurringEvents = [
@@ -80,13 +133,17 @@ async function main() {
     { title: 'Family Call', startUtc: day(6, 11, 0), endUtc: day(6, 12, 0), timezone: 'Asia/Hong_Kong' },
     { title: 'Meal Prep', startUtc: day(6, 15, 0), endUtc: day(6, 16, 30), timezone: 'America/Vancouver' },
     { title: 'Week Planning', startUtc: day(6, 18, 0), endUtc: day(6, 19, 0), timezone: 'Europe/Istanbul' },
+
+    ...rollingDemoEvents(anchor),
   ];
 
   for (const event of events) {
     await prisma.event.create({ data: event });
   }
 
-  console.log(`Seeded ${recurringEvents.length} recurring + ${events.length} one-off events`);
+  console.log(
+    `Seeded ${recurringEvents.length} recurring + ${events.length} one-off (SEED_TIMEZONE=${seedTimeZone()})`,
+  );
 }
 
 main()

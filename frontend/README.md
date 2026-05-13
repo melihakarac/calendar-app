@@ -160,7 +160,7 @@ npm run lint           # ESLint
 npm run preview        # Preview production build
 ```
 
-The dev server proxies `/api` requests to `http://localhost:3000` (backend).
+The dev server proxies `/api` requests to `http://localhost:3001` (same default `PORT` as the backend and Docker Compose).
 
 ## Performance
 

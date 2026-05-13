@@ -141,7 +141,10 @@ describe('Events CRUD (e2e)', () => {
 
       const res = await request(app.getHttpServer())
         .get('/api/v1/events')
-        .query({ from: '2026-06-15T00:00:00.000Z', to: '2026-06-16T00:00:00.000Z' })
+        .query({
+          from: '2026-06-15T00:00:00.000Z',
+          to: '2026-06-16T00:00:00.000Z',
+        })
         .expect(HttpStatus.OK);
 
       expect(res.body.data).toHaveLength(1);
@@ -155,7 +158,10 @@ describe('Events CRUD (e2e)', () => {
 
       const res = await request(app.getHttpServer())
         .get('/api/v1/events')
-        .query({ from: '2026-07-01T00:00:00.000Z', to: '2026-07-02T00:00:00.000Z' })
+        .query({
+          from: '2026-07-01T00:00:00.000Z',
+          to: '2026-07-02T00:00:00.000Z',
+        })
         .expect(HttpStatus.OK);
 
       expect(res.body.data).toHaveLength(0);

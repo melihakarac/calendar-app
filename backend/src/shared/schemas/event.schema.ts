@@ -15,7 +15,9 @@ const titleSchema = z
   .min(1, 'Title is required')
   .max(255, 'Title must be 255 characters or less');
 
-const datetimeSchema = z.iso.datetime({ error: 'Must be a valid ISO 8601 UTC datetime' });
+const datetimeSchema = z.iso.datetime({
+  error: 'Must be a valid ISO 8601 UTC datetime',
+});
 
 const timezoneSchema = z.string().refine(isValidIANATimezone, {
   message: 'Must be a valid IANA timezone',
@@ -43,7 +45,10 @@ export const createEventSchema = z
       if (data.isRecurring && !data.recurrenceEndUtc) return false;
       return true;
     },
-    { message: 'Recurrence end date is required for recurring events', path: ['recurrenceEndUtc'] },
+    {
+      message: 'Recurrence end date is required for recurring events',
+      path: ['recurrenceEndUtc'],
+    },
   )
   .refine(
     (data) => {
@@ -52,7 +57,10 @@ export const createEventSchema = z
       }
       return true;
     },
-    { message: 'Recurrence end date must be after the event end time', path: ['recurrenceEndUtc'] },
+    {
+      message: 'Recurrence end date must be after the event end time',
+      path: ['recurrenceEndUtc'],
+    },
   );
 
 export const updateEventSchema = z
@@ -67,7 +75,10 @@ export const updateEventSchema = z
   .refine(
     (data) => {
       if (data.startUtc && data.endUtc) {
-        return endAfterStartRefine({ startUtc: data.startUtc, endUtc: data.endUtc });
+        return endAfterStartRefine({
+          startUtc: data.startUtc,
+          endUtc: data.endUtc,
+        });
       }
       return true;
     },

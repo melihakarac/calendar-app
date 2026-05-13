@@ -27,12 +27,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       if (typeof responseBody === 'string') {
         message = responseBody;
       } else if (typeof responseBody === 'object' && responseBody !== null) {
-        const { message: msg, statusCode: _sc, ...rest } = responseBody as Record<string, unknown>;
+        const body = { ...(responseBody as Record<string, unknown>) };
+        const msg = body.message;
+        delete body.message;
+        delete body.statusCode;
         message = (msg as string) || message;
-        extra = rest;
+        extra = body;
       }
     } else {
-      this.logger.error('Unhandled exception', exception instanceof Error ? exception.stack : exception);
+      const errMessage =
+        exception instanceof Error ? exception.message : String(exception);
+      this.logger.error(
+        `Unhandled exception: ${errMessage}`,
+        exception instanceof Error ? exception.stack : exception,
+      );
     }
 
     response.status(statusCode).json({

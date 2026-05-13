@@ -26,7 +26,11 @@ export interface ExpandedEvent {
   updatedAt: Date;
 }
 
-function generateOccurrences(event: Event, rangeStart?: Date, rangeEnd?: Date): TimeRange[] {
+function generateOccurrences(
+  event: Event,
+  rangeStart?: Date,
+  rangeEnd?: Date,
+): TimeRange[] {
   if (!event.isRecurring || !event.recurrenceEndUtc) {
     return [{ start: event.startUtc, end: event.endUtc }];
   }
@@ -39,7 +43,11 @@ function generateOccurrences(event: Event, rangeStart?: Date, rangeEnd?: Date): 
   while (currentStart <= recEnd) {
     const currentEnd = new Date(currentStart.getTime() + duration);
 
-    if (!rangeStart || !rangeEnd || (currentEnd > rangeStart && currentStart < rangeEnd)) {
+    if (
+      !rangeStart ||
+      !rangeEnd ||
+      (currentEnd > rangeStart && currentStart < rangeEnd)
+    ) {
       results.push({ start: new Date(currentStart), end: currentEnd });
     }
 
@@ -100,7 +108,9 @@ export class EventsService {
     const startUtc = new Date(dto.startUtc);
     const endUtc = new Date(dto.endUtc);
     const isRecurring = dto.isRecurring ?? false;
-    const recurrenceEndUtc = dto.recurrenceEndUtc ? new Date(dto.recurrenceEndUtc) : undefined;
+    const recurrenceEndUtc = dto.recurrenceEndUtc
+      ? new Date(dto.recurrenceEndUtc)
+      : undefined;
 
     const newOccurrences = generateOccurrences({
       startUtc,
@@ -127,9 +137,12 @@ export class EventsService {
     const startUtc = dto.startUtc ? new Date(dto.startUtc) : existing.startUtc;
     const endUtc = dto.endUtc ? new Date(dto.endUtc) : existing.endUtc;
     const isRecurring = dto.isRecurring ?? existing.isRecurring;
-    const recurrenceEndUtc = dto.recurrenceEndUtc !== undefined
-      ? (dto.recurrenceEndUtc ? new Date(dto.recurrenceEndUtc) : null)
-      : existing.recurrenceEndUtc;
+    const recurrenceEndUtc =
+      dto.recurrenceEndUtc !== undefined
+        ? dto.recurrenceEndUtc
+          ? new Date(dto.recurrenceEndUtc)
+          : null
+        : existing.recurrenceEndUtc;
 
     if (endUtc <= startUtc) {
       throw new ConflictException('End time must be after start time');
@@ -165,7 +178,12 @@ export class EventsService {
   ): Promise<void> {
     const allEvents = await this.repository.findAllEvents(excludeId);
 
-    const conflicts: { id: string; title: string; startUtc: Date; endUtc: Date }[] = [];
+    const conflicts: {
+      id: string;
+      title: string;
+      startUtc: Date;
+      endUtc: Date;
+    }[] = [];
     const seenIds = new Set<string>();
 
     for (const newOcc of newOccurrences) {

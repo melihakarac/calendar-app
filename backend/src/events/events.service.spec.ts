@@ -158,7 +158,9 @@ describe('EventsService', () => {
       repository.findAllEvents.mockResolvedValue([]);
       repository.update.mockResolvedValue(updatedEvent);
 
-      const result = await service.update(mockEvent.id, { title: 'Updated Title' });
+      const result = await service.update(mockEvent.id, {
+        title: 'Updated Title',
+      });
 
       expect(result.title).toBe('Updated Title');
     });

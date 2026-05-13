@@ -22,7 +22,7 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  const port = config.get<number>('PORT', 3000);
+  const port = config.get<number>('PORT', 3001);
   await app.listen(port);
   console.log(`Server running on http://localhost:${port}`);
 }
